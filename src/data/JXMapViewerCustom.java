@@ -14,7 +14,6 @@ import org.jxmapviewer.viewer.GeoPosition;
 
 public class JXMapViewerCustom extends JXMapViewer
 {
-    private List<RoutingData> routingData;   
     private boolean first = true;
     public List<RoutingData> getRoutingData() {
         return routingData;
@@ -23,7 +22,7 @@ public class JXMapViewerCustom extends JXMapViewer
         this.routingData = routingData;
         repaint();
     } 
-    
+    private List<RoutingData> routingData; 
      @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -35,7 +34,7 @@ public class JXMapViewerCustom extends JXMapViewer
             for (RoutingData d : routingData) {
                 draw(p2, d);
             }
-            g2.setColor(new Color(28, 23, 255));
+            g2.setColor(new Color(63, 82, 66));
             g2.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.draw(p2);
             g2.dispose();

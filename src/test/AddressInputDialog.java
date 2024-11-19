@@ -12,6 +12,10 @@ public class AddressInputDialog extends JDialog {
     private JTextField longitudeField;
     private JButton addButton;
     private JButton doneButton;
+    private static final double LATITUD_MIN = 10.917;
+    private static final double LATITUD_MAX = 11.033;
+    private static final double LONGITUD_MIN = -74.825;
+    private static final double LONGITUD_MAX = -74.766;
 
     private ArrayList<GeoPosition> dir;  // Aquí almacenamos las coordenadas ingresadas manualmente
 
@@ -20,7 +24,7 @@ public class AddressInputDialog extends JDialog {
         dir = new ArrayList<>();  // Lista para guardar las coordenadas
 
         setLayout(new FlowLayout());
-        setSize(500, 150);
+        setSize(500, 300);
         setLocationRelativeTo(parent);
 
         // Campos de texto para la latitud y longitud
@@ -47,7 +51,9 @@ public class AddressInputDialog extends JDialog {
                     // Obtener y validar la latitud y longitud
                     double latitude = Double.parseDouble(latitudeField.getText());
                     double longitude = Double.parseDouble(longitudeField.getText());
-
+                    
+                    if(latitude >= LATITUD_MIN && latitude<= LATITUD_MAX && longitude>=LONGITUD_MIN && longitude 
+                            <=LONGITUD_MAX){
                     // Crear un objeto GeoPosition con las coordenadas ingresadas
                     GeoPosition coordinates = new GeoPosition(latitude, longitude);
                     dir.add(coordinates);  // Agregar las coordenadas a la lista
@@ -55,9 +61,14 @@ public class AddressInputDialog extends JDialog {
                     // Limpiar los campos de texto después de agregar las coordenadas
                     latitudeField.setText("");
                     longitudeField.setText("");
-
                     JOptionPane.showMessageDialog(AddressInputDialog.this, 
-                        "Coordenadas agregadas: Latitud " + latitude + ", Longitud " + longitude);
+                    "Coordenadas agregadas: Latitud " + latitude + ", Longitud " + longitude);
+                    }else{
+                         JOptionPane.showMessageDialog(AddressInputDialog.this, 
+                         "Las coordenadas ingresadas están fuera del rango permitido para Barranquilla.", 
+                          "Error de validación", JOptionPane.ERROR_MESSAGE);
+                    }
+                    
                 } catch (NumberFormatException ex) {
                     // Manejar el error si los valores ingresados no son números válidos
                     JOptionPane.showMessageDialog(AddressInputDialog.this, 

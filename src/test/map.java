@@ -1,6 +1,9 @@
 
 package test;
 
+import data.RoutePainter;
+import data.RoutingData;
+import data.RoutingService;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -27,6 +30,7 @@ import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import static javax.swing.UIManager.get;
 import javax.swing.event.MouseInputListener;
+import model.ModelUserr;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.input.PanMouseInputListener;
@@ -35,18 +39,26 @@ import org.jxmapviewer.viewer.DefaultTileFactory;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactoryInfo;
 import org.jxmapviewer.viewer.WaypointPainter;
+import test.recyclePoints;
 import waypoint.EventWayPoint;
 import waypoint.WaypointRender;
 import waypoint.myWaypoint;
 
 public class map extends javax.swing.JFrame {
-     private main v1;
+     private final ModelUserr  user;
+     
      private GeoPosition selectedPosition;
+     //Lista con puntos de la ruta.
      private ArrayList<GeoPosition>coordinates;
+     private List<RoutingData> routingData = new ArrayList<>();
+     
      private int index;
-     private boolean verifyF = false;
-     private boolean verifyR=false;
-     private boolean verifyS=false;
+     //No han sido seleccionados
+     private boolean vFinal = false;
+     private boolean vPuntos=false;
+     private boolean vInicio=false;
+     private boolean vRuta = false;
+     private boolean activo = true;
      private final Set<myWaypoint> waypoints = new HashSet<>();
      private GeoPosition[] positions = {
         new GeoPosition(10.9732, -74.7833), //Exito metropolitano
@@ -91,9 +103,11 @@ public class map extends javax.swing.JFrame {
     }
      private EventWayPoint event;
      
-     public map() {
+     public map(ModelUserr user) {
+        this.user = user;
         initComponents();
         init();
+        
     }
     
      private void init()
@@ -103,14 +117,22 @@ public class map extends javax.swing.JFrame {
         jXMapViewer.setTileFactory(tileFactory);
         GeoPosition geo = new GeoPosition (10.9938599,-74.7926118);
         jXMapViewer.setAddressLocation(geo);
-        jXMapViewer.setZoom(12);
+        jXMapViewer.setZoom(6);
         //Crear evento del mouse
         MouseInputListener x = new PanMouseInputListener(jXMapViewer);
         jXMapViewer.addMouseListener(x);
         jXMapViewer.addMouseMotionListener(x);
         jXMapViewer.addMouseWheelListener(new ZoomMouseWheelListenerCenter(jXMapViewer));
-        event = getEvent();
+        event = getEvent(); 
      }
+     
+     public static void mostrarError(String mensaje) {
+        JOptionPane.showMessageDialog(null, 
+                                      mensaje, 
+                                      "Error", 
+                                      JOptionPane.ERROR_MESSAGE);
+    }
+     
      private void addWaypoint(myWaypoint waypoint){
          for (myWaypoint d : waypoints ) {
              jXMapViewer.remove(d.getButton());
@@ -125,26 +147,25 @@ public class map extends javax.swing.JFrame {
         for (myWaypoint d : waypoints) {
             jXMapViewer.add(d.getButton());
         }
+        
+    }
+    private void showRoute(){
+        if(coordinates.size()==2){
+           routingData = RoutingService.getInstance().routing(coordinates.get(0).getLatitude(),coordinates.get(0).getLongitude(), coordinates.get(1).getLatitude(), coordinates.get(1).getLongitude());
+        }else{
+            routingData.clear();
+        }
+        
+        jXMapViewer.setRoutingData(routingData);
     }
     private void clearWaypoint() {
         for (myWaypoint d : waypoints) {
             jXMapViewer.remove(d.getButton());
         }
+        //routingData.clear();
         waypoints.clear();
         initWaypoint();
     }
-    private void drawRoute(ArrayList<GeoPosition> routePoints){
-        for (int i = 0; i < routePoints.size()-1; i++) {
-            GeoPosition start = routePoints.get(i); 
-            GeoPosition end = routePoints.get(i+1);    
-        }
-    }
-    private void drawLineBetweenPoints(Graphics2D g2d, GeoPosition start, GeoPosition end)
-   {
-          
-   }
-
-    
     private void clearRoute(){
         waypoints.clear();
         jXMapViewer.repaint(); 
@@ -162,203 +183,261 @@ public class map extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jMenuBar1 = new javax.swing.JMenuBar();
-        jMenu1 = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
         jPanel1 = new javax.swing.JPanel();
+        Title = new javax.swing.JLabel();
+        cmdRecyclePoints = new com.raven.swing.Button();
+        cmdShowRoute = new com.raven.swing.Button();
+        cmdClear = new com.raven.swing.Button();
+        cmdFinalPoints = new com.raven.swing.Button();
+        cmdSelectPoints = new com.raven.swing.Button();
+        cmdInformation = new com.raven.swing.Button();
         jLabel1 = new javax.swing.JLabel();
-        jPanel2 = new javax.swing.JPanel();
-        jXMapViewer = new org.jxmapviewer.JXMapViewer();
-        cmdAdd = new javax.swing.JButton();
-        cmdClear = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
-
-        jMenu1.setText("File");
-        jMenuBar1.add(jMenu1);
-
-        jMenu2.setText("Edit");
-        jMenuBar1.add(jMenu2);
+        jXMapViewer = new data.JXMapViewerCustom();
+        cmdExit = new com.raven.swing.Button();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setAlwaysOnTop(true);
+        setTitle("Map");
         setAutoRequestFocus(false);
+        setBackground(new java.awt.Color(255, 255, 255));
+        setResizable(false);
+        setSize(new java.awt.Dimension(933, 534));
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jPanel1.setBackground(new java.awt.Color(0, 153, 0));
-        jPanel1.setForeground(new java.awt.Color(0, 153, 0));
-        jPanel1.setFocusable(false);
-        jPanel1.setName(""); // NOI18N
-        jPanel1.setPreferredSize(new java.awt.Dimension(499, 512));
-        jPanel1.setRequestFocusEnabled(false);
+        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Title.setFont(new java.awt.Font("SansSerif", 1, 18)); // NOI18N
+        Title.setForeground(new java.awt.Color(7, 164, 121));
+        Title.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Title.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/LogoICO_1.gif"))); // NOI18N
 
-        jPanel2.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
-
-        jXMapViewer.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
-
-        javax.swing.GroupLayout jXMapViewerLayout = new javax.swing.GroupLayout(jXMapViewer);
-        jXMapViewer.setLayout(jXMapViewerLayout);
-        jXMapViewerLayout.setHorizontalGroup(
-            jXMapViewerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 692, Short.MAX_VALUE)
-        );
-        jXMapViewerLayout.setVerticalGroup(
-            jXMapViewerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 557, Short.MAX_VALUE)
-        );
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jXMapViewer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(jXMapViewer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 12, Short.MAX_VALUE))
-        );
-
-        cmdAdd.setText("Recycle Waypoints");
-        cmdAdd.setActionCommand("Show RecyclePoints");
-        cmdAdd.addActionListener(new java.awt.event.ActionListener() {
+        cmdRecyclePoints.setBackground(new java.awt.Color(7, 164, 121));
+        cmdRecyclePoints.setForeground(new java.awt.Color(255, 255, 255));
+        cmdRecyclePoints.setText("Puntos Reciclaje");
+        cmdRecyclePoints.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdRecyclePoints.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cmdAddActionPerformed(evt);
+                cmdRecyclePointsActionPerformed(evt);
             }
         });
 
-        cmdClear.setText("Clear");
-        cmdClear.setToolTipText("");
+        cmdShowRoute.setBackground(new java.awt.Color(7, 164, 121));
+        cmdShowRoute.setForeground(new java.awt.Color(255, 255, 255));
+        cmdShowRoute.setText("Mostrar Ruta");
+        cmdShowRoute.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdShowRoute.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmdShowRouteActionPerformed(evt);
+            }
+        });
+
+        cmdClear.setBackground(new java.awt.Color(7, 164, 121));
+        cmdClear.setForeground(new java.awt.Color(255, 255, 255));
+        cmdClear.setText("Ocultar Puntos");
+        cmdClear.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
         cmdClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cmdClearActionPerformed(evt);
             }
         });
 
-        jButton1.setText("Select Points");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        cmdFinalPoints.setBackground(new java.awt.Color(7, 164, 121));
+        cmdFinalPoints.setForeground(new java.awt.Color(255, 255, 255));
+        cmdFinalPoints.setText("Punto de llegada");
+        cmdFinalPoints.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdFinalPoints.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                cmdFinalPointsActionPerformed(evt);
             }
         });
 
-        jButton2.setText("Final Points");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        cmdSelectPoints.setBackground(new java.awt.Color(7, 164, 121));
+        cmdSelectPoints.setForeground(new java.awt.Color(255, 255, 255));
+        cmdSelectPoints.setText("Punto de partida");
+        cmdSelectPoints.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdSelectPoints.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                cmdSelectPointsActionPerformed(evt);
             }
         });
 
-        jButton3.setText("Show Route");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        cmdInformation.setBackground(new java.awt.Color(7, 164, 121));
+        cmdInformation.setForeground(new java.awt.Color(255, 255, 255));
+        cmdInformation.setText("Ver Información");
+        cmdInformation.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdInformation.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                cmdInformationActionPerformed(evt);
             }
         });
 
-        jButton4.setText("Thanks!");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/ECOReciclaje.gif"))); // NOI18N
+        jLabel1.setText("jLabel1");
+
+        cmdExit.setBackground(new java.awt.Color(7, 164, 121));
+        cmdExit.setForeground(new java.awt.Color(255, 255, 255));
+        cmdExit.setText("Salir");
+        cmdExit.setFont(new java.awt.Font("SansSerif", 1, 12)); // NOI18N
+        cmdExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                cmdExitActionPerformed(evt);
             }
         });
+
+        javax.swing.GroupLayout jXMapViewerLayout = new javax.swing.GroupLayout(jXMapViewer);
+        jXMapViewer.setLayout(jXMapViewerLayout);
+        jXMapViewerLayout.setHorizontalGroup(
+            jXMapViewerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jXMapViewerLayout.createSequentialGroup()
+                .addContainerGap(416, Short.MAX_VALUE)
+                .addComponent(cmdExit, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        jXMapViewerLayout.setVerticalGroup(
+            jXMapViewerLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jXMapViewerLayout.createSequentialGroup()
+                .addContainerGap(333, Short.MAX_VALUE)
+                .addComponent(cmdExit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(264, 264, 264)
-                        .addComponent(cmdAdd)
-                        .addGap(37, 37, 37)
-                        .addComponent(cmdClear, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(72, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(cmdShowRoute, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdRecyclePoints, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdSelectPoints, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(32, 32, 32)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(cmdFinalPoints, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdClear, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdInformation, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(40, 40, 40))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(38, 38, 38)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(153, 153, 153)
-                        .addComponent(jButton3)
-                        .addGap(18, 18, 18)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(33, 33, 33)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(28, 28, 28)
-                        .addComponent(jButton4)))
-                .addContainerGap(68, Short.MAX_VALUE))
+                        .addGap(57, 57, 57)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 236, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addComponent(jXMapViewer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(30, 30, 30))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(Title, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(210, 210, 210))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(28, 28, 28)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cmdAdd)
-                    .addComponent(cmdClear))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2)
-                    .addComponent(jButton3)
-                    .addComponent(jButton4))
-                .addGap(80, 80, 80)
-                .addComponent(jLabel1)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap()
+                .addComponent(Title, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(47, 47, 47)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cmdRecyclePoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdClear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cmdSelectPoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdFinalPoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cmdShowRoute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmdInformation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(108, 108, 108))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jXMapViewer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 822, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 718, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-        );
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 920, 500));
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
     
-    //Añade waypoints de reciclaje al presioanar el boton. 
-    private void cmdAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdAddActionPerformed
-        verifyR=true;
-        //Waypoints Fijos de informacion
-        for (int i = 0; i < positions.length; i++) 
-        {
-            addWaypoint(new myWaypoint(namesRecycle[i],event,positions[i]));
-        }
+    private void cmdRecyclePointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdRecyclePointsActionPerformed
         
-    }//GEN-LAST:event_cmdAddActionPerformed
-    //Boton clear
-    private void cmdClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdClearActionPerformed
+        
+        if (activo == true) {
+            vPuntos = true;
+            for (int i = 0; i < positions.length; i++) {
+                addWaypoint(new myWaypoint(namesRecycle[i], event, positions[i]));
+            }
+        } else {
+            mostrarError("Tienes que ocultar los puntos de reciclaje si quieres volver ha accionar este boton.");
+        }
+        activo = false;
+        
+    }//GEN-LAST:event_cmdRecyclePointsActionPerformed
 
+    private void cmdShowRouteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdShowRouteActionPerformed
+       
+        vRuta = true;
+
+        //Aqui añadimos los puntos de ruta y verificamos si se entro al boton "final"
+        if (vInicio) {
+            clearWaypoint(); //Caso tal de que se presione de nuevo el boton    
+        } else {
+            mostrarError("Selecciona al menos un punto inicial");
+        }
+        if (vFinal) {
+            System.out.println("Se presiono el boton 2");
+            //addWaypoint(new myWaypoint(namesRecycle[index], event, selectedPosition));
+            for (int i = 0; i < coordinates.size(); i++) {
+                addWaypoint(new myWaypoint("Direccion ruta " + (i + 1), event, coordinates.get(i)));
+                vInicio = true;
+            }
+            //showRoute();
+            /*
+            List<double[]> waypoints = new ArrayList<>();
+            for (GeoPosition geo : coordinates) {
+                waypoints.add(new double[]{geo.getLatitude(), geo.getLongitude()});
+            }
+            */    
+        } else {
+            mostrarError("Selecciona un punto de llegada");
+        }
+
+        //Aqui mostraremos la ruta. 
+        
+    }//GEN-LAST:event_cmdShowRouteActionPerformed
+
+    private void cmdClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdClearActionPerformed
+        activo=true;
         clearWaypoint();
-        System.out.println(selectedPosition);
     }//GEN-LAST:event_cmdClearActionPerformed
-    //Select positions
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        verifyR=false;
-        verifyF=false;
+
+    private void cmdFinalPointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdFinalPointsActionPerformed
+        if (vInicio) {
+            vPuntos = false;
+            vFinal = true;
+
+            recyclePoints d = new recyclePoints(this, namesRecycle, positions);
+            selectedPosition = d.getSelectedPosition();
+            index = d.getSelectedIndex();
+            if (selectedPosition != null) {
+                System.out.println("Latitud: " + selectedPosition.getLatitude()
+                        + ", Longitud: " + selectedPosition.getLongitude());
+            }
+            coordinates.add(selectedPosition);
+            //vInicio = false;
+        } else {
+            mostrarError("Selecciona al menos un punto inicial");
+        }
+    }//GEN-LAST:event_cmdFinalPointsActionPerformed
+
+    private void cmdSelectPointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdSelectPointsActionPerformed
+        vPuntos=false;
+        vFinal=false;
         AddressInputDialog d = new AddressInputDialog(this); //Pasamos el jFrame actual como padre aqui inicializamos el constructor que guarda las direcciones.
         //Aqui llamaremos a geoPosition Coordinates si implementamos la API DE GOOGLE MAPS;
         coordinates = d.getDir();
@@ -367,52 +446,16 @@ public class map extends javax.swing.JFrame {
                 System.out.println("Latitud: "+pos.getLatitude()+"Longitud:"+pos.getLongitude());
             }
             System.out.println("Coordenadas vacias");
-            verifyS=false;
+            vInicio=false;
         }else{
             for(GeoPosition pos:coordinates){
                 System.out.println("Latitud: "+pos.getLatitude()+"Longitud:"+pos.getLongitude());
             }
-            verifyS = true;
+            vInicio = true;
         }
-            
-      
-        
-    }//GEN-LAST:event_jButton1ActionPerformed
-    //Select punto final
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        if(verifyS){    
-            verifyR= false;
-            verifyF = true;
-        
-            recyclePoints d= new recyclePoints(this,namesRecycle,positions);
-            selectedPosition = d.getSelectedPosition();
-            index = d.getSelectedIndex();
-            if (selectedPosition != null) {
-            System.out.println("Latitud: " + selectedPosition.getLatitude() + 
-                           ", Longitud: " + selectedPosition.getLongitude());
-            }
-            coordinates.add(selectedPosition);
-            verifyS = false;
-        }
-    }//GEN-LAST:event_jButton2ActionPerformed
-    //Mostrar ruta
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        //Aqui añadimos los puntos de ruta y verificamos si se entro al boton "final"
-        if(verifyS){
-            clearWaypoint(); //Caso tal de que se presione de nuevo el boton
-        }
-        if(verifyF){
-          System.out.println("Se presiono el boton 2");
-          addWaypoint (new myWaypoint(namesRecycle[index], event,selectedPosition));
-        }
-        for (int i = 0; i < coordinates.size(); i++) {
-          addWaypoint(new myWaypoint("Direccion ruta "+(i+1), event, coordinates.get(i))); 
-        }
-        //Aqui mostraremos la ruta. 
-        
-    }//GEN-LAST:event_jButton3ActionPerformed
-    //Boton de informacion
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    }//GEN-LAST:event_cmdSelectPointsActionPerformed
+
+    private void cmdInformationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdInformationActionPerformed
     JTextArea textArea = new JTextArea();
     textArea.setText("Reciclar es de suma importancia para nosotros y visualizar aquellos puntos nos facilita la vida.\n"+""+
                     "Reciclar ayuda a reducir la contaminación y conservar los recursos naturales.\n" +""+
@@ -429,38 +472,32 @@ public class map extends javax.swing.JFrame {
     scrollPane.setPreferredSize(new Dimension(300, 100)); // Ajusta el tamaño del JScrollPane
 
     JOptionPane.showMessageDialog(this, scrollPane,"Importancia sobre el reciclaje",JOptionPane.INFORMATION_MESSAGE);
-    }//GEN-LAST:event_jButton4ActionPerformed
-        
-    
-    
-   
-    
-    public void setV1(main v1){
-        this.v1 = v1;
-    }
-    public static void main(String args[]) {
-    
+    }//GEN-LAST:event_cmdInformationActionPerformed
+
+    private void cmdExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdExitActionPerformed
+        System.exit(0);
+    }//GEN-LAST:event_cmdExitActionPerformed
+
+    public static void main(ModelUserr user) {
        java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new map().setVisible(true);
+                new map(user).setVisible(true);
                 
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton cmdAdd;
-    private javax.swing.JButton cmdClear;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
+    private javax.swing.JLabel Title;
+    private com.raven.swing.Button cmdClear;
+    private com.raven.swing.Button cmdExit;
+    private com.raven.swing.Button cmdFinalPoints;
+    private com.raven.swing.Button cmdInformation;
+    private com.raven.swing.Button cmdRecyclePoints;
+    private com.raven.swing.Button cmdSelectPoints;
+    private com.raven.swing.Button cmdShowRoute;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
-    private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
-    private org.jxmapviewer.JXMapViewer jXMapViewer;
+    private data.JXMapViewerCustom jXMapViewer;
     // End of variables declaration//GEN-END:variables
 }
